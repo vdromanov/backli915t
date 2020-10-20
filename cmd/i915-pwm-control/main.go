@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -20,22 +20,19 @@ const (
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stdout, "Usage:\n%s <frequency_to_set>\n", os.Args[0])
-		os.Exit(-1)
+		log.Fatalf("Usage:\n%s <frequency_to_set>\n", os.Args[0])
 	}
 	if checkModuleIsLoaded() {
-		fmt.Fprintf(os.Stdout, "Driver %s has successfully loaded\n", DriverName) // TODO: set frequency here
-		fmt.Fprintf(os.Stdout, "Reg contents: 0x%08x\n", regs.ReadReg(BLC_PWM_PCH_CTL2_REG))
-		freq, err := strconv.ParseInt(os.Args[1], 10, 16)
+		log.Printf("Driver %s has found in loaded ones\n", DriverName) // TODO: set frequency here
+		desiredFreq, err := strconv.ParseInt(os.Args[1], 10, 16)
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
-		newVal := regs.CalculatePayload(BLC_PWM_PCH_CTL2_REG, PCH_RAWCLK_FREQ_REG, int(freq))
-		fmt.Printf("Has calculated new value: 0x%08x\n", newVal)
-		regs.WriteReg(BLC_PWM_PCH_CTL2_REG, newVal)
+		payload := regs.CalculatePayload(regs.ReadReg(BLC_PWM_PCH_CTL2_REG), regs.ReadReg(PCH_RAWCLK_FREQ_REG), int(desiredFreq))
+		log.Printf("Has calculated payload value: 0x%08x\n", payload)
+		regs.WriteReg(BLC_PWM_PCH_CTL2_REG, payload)
 	} else {
-		fmt.Fprintf(os.Stderr, "Driver %s was not found in loaded. Exiting...\n", DriverName)
-		os.Exit(-1)
+		log.Fatalf("Driver %s was not found in loaded ones.\nExiting...\n", DriverName)
 	}
 }
 
@@ -43,7 +40,7 @@ func main() {
 func checkModuleIsLoaded() bool {
 	content, err := ioutil.ReadFile("/proc/modules")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	return strings.Contains(string(content), DriverName)
 }
