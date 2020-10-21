@@ -23,3 +23,10 @@ func CalculatePayload(blcPwmRegVal, pchRawclkRegVal, freq int) int {
 	regVal := buildPayload(period, cycle)
 	return regVal
 }
+
+// ParsePayload calculates PWM frequency in Hz from BLC and PCH regs values
+func ParsePayload(blcPwmRegVal, pchRawclkRegVal int) int {
+	period, _ := splitPayload(blcPwmRegVal)
+	freq := int(1E6 * pchRawclkRegVal / 128 / period)
+	return freq
+}

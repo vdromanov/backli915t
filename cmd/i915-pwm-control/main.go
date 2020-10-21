@@ -24,6 +24,7 @@ func main() {
 	}
 	if checkModuleIsLoaded() {
 		log.Printf("Driver %s has found in loaded ones\n", DriverName) // TODO: set frequency here
+		log.Printf("Actual pwm frequency is: %d\n", regs.ParsePayload(regs.ReadReg(BLC_PWM_PCH_CTL2_REG), regs.ReadReg(PCH_RAWCLK_FREQ_REG)))
 		desiredFreq, err := strconv.ParseInt(os.Args[1], 10, 16)
 		if err != nil {
 			log.Fatalln(err)
