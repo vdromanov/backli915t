@@ -15,18 +15,18 @@ func buildPayload(period, cycle int) int {
 }
 
 // CalculatePayload does the magic of embedding desired frequency into a correct payload for intel-gpu reg
-func CalculatePayload(blcPwmRegVal, pchRawclkRegVal, freq int) int {
-	_, cycle := splitPayload(blcPwmRegVal)
+func CalculatePayload(blcPwmRegVal, pchRawclkRegVal *int, freq int) int {
+	_, cycle := splitPayload(*blcPwmRegVal)
 	log.Printf("Got cycle: 0x%08x\n", cycle)
-	period := int(1000000 * pchRawclkRegVal / 128 / freq)
+	period := int(1000000 * *pchRawclkRegVal / 128 / freq)
 	log.Printf("Got period: 0x%08x\n", period)
 	regVal := buildPayload(period, cycle)
 	return regVal
 }
 
 // ParsePayload calculates PWM frequency in Hz from BLC and PCH regs values
-func ParsePayload(blcPwmRegVal, pchRawclkRegVal int) int {
-	period, _ := splitPayload(blcPwmRegVal)
-	freq := int(1E6 * pchRawclkRegVal / 128 / period)
+func ParsePayload(blcPwmRegVal, pchRawclkRegVal *int) int {
+	period, _ := splitPayload(*blcPwmRegVal)
+	freq := int(1E6 * *pchRawclkRegVal / 128 / period)
 	return freq
 }

@@ -13,25 +13,21 @@ import (
 // DriverName is a name of compatible Linux kernel module
 const DriverName = "i915"
 
-const (
-	BLC_PWM_PCH_CTL2_REG = 0xC8254
-	PCH_RAWCLK_FREQ_REG  = 0xC6204
-)
-
 func main() {
 	if len(os.Args) != 2 {
 		log.Fatalf("Usage:\n%s <frequency_to_set>\n", os.Args[0])
 	}
 	if checkModuleIsLoaded() {
-		log.Printf("Driver %s has found in loaded ones\n", DriverName) // TODO: set frequency here
-		log.Printf("Actual pwm frequency is: %d\n", regs.ParsePayload(regs.ReadReg(BLC_PWM_PCH_CTL2_REG), regs.ReadReg(PCH_RAWCLK_FREQ_REG)))
+		log.Printf("Driver %s has found in loaded ones\n", DriverName)
+		blcRegContents, pchRegContents := regs.GetInfo() // Reading config regs once
+		log.Printf("Actual pwm frequency is: %d\n", regs.ParsePayload(&blcRegContents, &pchRegContents))
 		desiredFreq, err := strconv.ParseInt(os.Args[1], 10, 16)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		payload := regs.CalculatePayload(regs.ReadReg(BLC_PWM_PCH_CTL2_REG), regs.ReadReg(PCH_RAWCLK_FREQ_REG), int(desiredFreq))
+		payload := regs.CalculatePayload(&blcRegContents, &pchRegContents, int(desiredFreq))
 		log.Printf("Has calculated payload value: 0x%08x\n", payload)
-		regs.WriteReg(BLC_PWM_PCH_CTL2_REG, payload)
+		regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, payload)
 	} else {
 		log.Fatalf("Driver %s was not found in loaded ones.\nExiting...\n", DriverName)
 	}
