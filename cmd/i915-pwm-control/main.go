@@ -6,8 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
 )
 
 // DriverName is a name of compatible Linux kernel module
@@ -19,15 +17,13 @@ func main() {
 	}
 	if checkModuleIsLoaded() {
 		log.Printf("Driver %s has found in loaded ones\n", DriverName)
-		blcRegContents, pchRegContents := regs.GetInfo() // Reading config regs once
-		log.Printf("Actual pwm frequency is: %d\n", regs.ParsePayload(&blcRegContents, &pchRegContents))
+		log.Printf("Actual pwm frequency is: %d\n", getFrequency())
 		desiredFreq, err := strconv.ParseInt(os.Args[1], 10, 16)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		payload := regs.CalculatePayload(&blcRegContents, &pchRegContents, int(desiredFreq))
-		log.Printf("Has calculated payload value: 0x%08x\n", payload)
-		regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, payload)
+		log.Printf("Will set to %d\n", desiredFreq)
+		setFrequency(int(desiredFreq))
 	} else {
 		log.Fatalf("Driver %s was not found in loaded ones.\nExiting...\n", DriverName)
 	}
