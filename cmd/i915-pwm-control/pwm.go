@@ -6,19 +6,26 @@ import (
 	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
 )
 
-var blcRegContents, pchRegContents = regs.GetInfo() // Reading config regs once
+var blcRegContents = regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
 
 func getFrequency() int {
-	freq, _ := regs.ParsePayload(&blcRegContents, &pchRegContents)
+	period, _ := regs.SplitPayload(blcRegContents)
+	freq, err := regs.PeriodToFreq(period)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return freq
 }
 
 func setFrequency(frequency int) {
-	payload, err := regs.CalculatePayload(&blcRegContents, &pchRegContents, frequency)
+	_, cycle := regs.SplitPayload(blcRegContents)
+	log.Printf("Got cycle: 0x%08x\n", cycle)
+	period, err := regs.FreqToPeriod(frequency)
 	if err != nil {
 		log.Fatal(err)
 	}
-	regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, payload)
+	log.Printf("Got period: 0x%08x\n", period)
+	regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, regs.BuildPayload(period, cycle))
 }
 
 func changeFrequency(value int) {
