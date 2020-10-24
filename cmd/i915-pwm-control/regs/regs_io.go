@@ -51,11 +51,6 @@ func WriteReg(reg int, val int) {
 	}
 }
 
-// GetInfo reads values of i915's config regs
-func GetInfo() (int, int) {
-	return ReadReg(BLC_PWM_PCH_CTL2_REG), ReadReg(PCH_RAWCLK_FREQ_REG)
-}
-
 // findHex parses input string for hexadeciaml numbers and returns a slice of strings
 func findHex(input string) []string {
 	pattern := fmt.Sprintf("%s[[:xdigit:]]{%d}", hexPrefix, bytelength*2) // Hexadeciaml number of fixed length

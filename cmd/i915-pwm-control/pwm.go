@@ -6,10 +6,8 @@ import (
 	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
 )
 
-var blcRegContents = regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
-
-func getFrequency() int {
-	period, _ := regs.SplitPayload(blcRegContents)
+func getFrequency(blcRegContents *int) int {
+	period, _ := regs.SplitPayload(*blcRegContents)
 	freq, err := regs.PeriodToFreq(period)
 	if err != nil {
 		log.Fatal(err)
@@ -17,8 +15,8 @@ func getFrequency() int {
 	return freq
 }
 
-func setFrequency(frequency int) {
-	_, cycle := regs.SplitPayload(blcRegContents)
+func setFrequency(frequency int, blcRegContents *int) {
+	_, cycle := regs.SplitPayload(*blcRegContents)
 	log.Printf("Got cycle: 0x%08x\n", cycle)
 	period, err := regs.FreqToPeriod(frequency)
 	if err != nil {
@@ -28,8 +26,8 @@ func setFrequency(frequency int) {
 	regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, regs.BuildPayload(period, cycle))
 }
 
-func changeFrequency(value int) {
-	actualFreq := getFrequency()
+func changeFrequency(value int, blcRegContents *int) {
+	actualFreq := getFrequency(blcRegContents)
 	newFreq := actualFreq + value
-	setFrequency(newFreq)
+	setFrequency(newFreq, blcRegContents)
 }
