@@ -22,26 +22,44 @@ func main() {
 		log.Fatalln("Choose operating mode!")
 	}
 	var pwmChange string
+	var blChange string
 
 	flag.StringVar(&pwmChange, "pwm", "+0", "Specify PWM frequency in Hz") // A value is +100 like
+	flag.StringVar(&blChange, "bl", "+0", "Specify Backlight level in %")  // A value is +100 like
 	flag.Parse()
 
 	switch string(pwmChange[0]) {
 	case "+", "-":
-		if pwmChange, err := strconv.ParseInt(pwmChange, 10, 64); err == nil {
-			changeFrequency(int(pwmChange))
+		if change, err := strconv.ParseInt(pwmChange, 10, 64); err == nil {
+			changeFrequency(int(change))
 		} else {
 			log.Fatal(err)
 		}
 	case "=":
-		if pwmSet, err := strconv.ParseInt(pwmChange[1:], 10, 64); err == nil {
-			setFrequency(int(pwmSet))
+		if set, err := strconv.ParseInt(pwmChange[1:], 10, 64); err == nil {
+			setFrequency(int(set))
 		} else {
 			log.Fatal(err)
 		}
 	default:
 		log.Fatalf("Value should be like +<freq>/-<freq>/=<freq>")
+	}
 
+	switch string(blChange[0]) {
+	case "+", "-":
+		if change, err := strconv.ParseInt(blChange, 10, 64); err == nil {
+			changeBacklightPercent(int(change))
+		} else {
+			log.Fatal(err)
+		}
+	case "=":
+		if set, err := strconv.ParseInt(blChange[1:], 10, 64); err == nil {
+			setBacklightPercent(int(set))
+		} else {
+			log.Fatal(err)
+		}
+	default:
+		log.Fatalf("Value should be like +<freq>/-<freq>/=<freq>")
 	}
 
 }
