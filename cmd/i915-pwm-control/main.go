@@ -14,24 +14,25 @@ const DriverName = "i915"
 
 func main() {
 	if !checkModuleIsLoaded() {
-		log.Fatalf("Driver %s was not found in loaded ones.\nExiting...\n", DriverName)
+		log.Fatalf("Driver %s was not found in loaded ones.\nNothing to do...\n", DriverName)
 	}
 
+	// Flags for both pwm and bl modes. Only one flag is allowed at the moment
 	incPointer := flag.Int("inc", 0xFFFFFFFF, "Increment value")
 	decPointer := flag.Int("dec", 0xFFFFFFFF, "Decrement value")
 	setPointer := flag.Int("set", 0xFFFFFFFF, "Set value")
 	flag.Parse()
 
-	setFlags := make(map[string]bool)
+	setFlags := make(map[string]bool) // Inc/Dec and Set modes are using different funcs => storing info, was the flag a Set mode or not
 	var newVal int
 	var actualFlag string
 
-	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = (f.Name == "set"); actualFlag = f.Name })
-	if len(setFlags) > 1 { // Only one flag is allowed
-		log.Fatalln("Choose only one option")
+	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = (f.Name == "set"); actualFlag = f.Name }) // Iterating over all explicitly set flags
+	if len(setFlags) > 1 {                                                                       // Only one flag is allowed per mode
+		log.Fatalln("Only one flag per option is allowed")
 	}
 
-	switch actualFlag {
+	switch actualFlag { // Could increment/decrement/explicitly set value
 	case "inc":
 		newVal = *incPointer
 	case "dec":
@@ -39,10 +40,6 @@ func main() {
 	case "set":
 		newVal = *setPointer
 	}
-
-	log.Println(newVal)
-	log.Println(setFlags)
-	log.Println(actualFlag)
 
 	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
 
@@ -62,7 +59,7 @@ func main() {
 			changeBacklightPercent(newVal, &blcRegVal)
 		}
 	default:
-		log.Fatalln("Choose operating mode from bl/pwm")
+		log.Fatalln("Choose operating mode from bl/pwm") // TODO: Flag's print usage
 	}
 
 }

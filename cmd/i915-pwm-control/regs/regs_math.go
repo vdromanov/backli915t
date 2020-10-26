@@ -35,14 +35,14 @@ func PeriodToFreq(period int) (int, error) {
 
 func CycleToPercent(cycle, period int) (int, error) {
 	percent := int(float32(cycle) / float32(period) * 100.0)
-	if (percent < 0) && (percent > 100) {
+	if (percent < 0) || (percent > 100) {
 		return -1, errors.New("Incorrect percent value")
 	}
 	return percent, nil
 }
 
 func PercentToCycle(percent, period int) (int, error) {
-	if (percent < 0) && (percent > 100) {
+	if (percent < 0) || (percent > 100) {
 		return -1, errors.New("Incorrect percent value")
 	}
 	return int(period * percent / 100), nil
