@@ -29,5 +29,6 @@ func setBacklightPercent(percent int, blcRegContents *int) {
 func changeBacklightPercent(value int, blcRegContents *int) {
 	actualBl := getBacklightPercent(blcRegContents)
 	newBl := actualBl + value
+	log.Printf("New backlight is %d%%\n", newBl)
 	setBacklightPercent(newBl, blcRegContents)
 }

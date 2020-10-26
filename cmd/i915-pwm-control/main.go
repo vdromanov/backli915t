@@ -4,8 +4,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"os"
-	"strconv"
 	"strings"
 
 	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
@@ -19,53 +17,52 @@ func main() {
 		log.Fatalf("Driver %s was not found in loaded ones.\nExiting...\n", DriverName)
 	}
 
-	if len(os.Args) < 2 {
-		log.Fatalln("Choose operating mode!")
-	}
-	var pwmChange string
-	var blChange string
-	var blcRegVal int
-
-	flag.StringVar(&pwmChange, "pwm", "+0", "Specify PWM frequency in Hz") // A value is +100 like
-	flag.StringVar(&blChange, "bl", "+0", "Specify Backlight level in %")  // A value is +100 like
+	incPointer := flag.Int("inc", 0xFFFFFFFF, "Increment value")
+	decPointer := flag.Int("dec", 0xFFFFFFFF, "Decrement value")
+	setPointer := flag.Int("set", 0xFFFFFFFF, "Set value")
 	flag.Parse()
 
-	blcRegVal = regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	setFlags := make(map[string]bool)
+	var newVal int
+	var actualFlag string
 
-	switch string(pwmChange[0]) {
-	case "+", "-":
-		if change, err := strconv.ParseInt(pwmChange, 10, 64); err == nil {
-			changeFrequency(int(change), &blcRegVal)
-		} else {
-			log.Fatal(err)
-		}
-	case "=":
-		if set, err := strconv.ParseInt(pwmChange[1:], 10, 64); err == nil {
-			setFrequency(int(set), &blcRegVal)
-		} else {
-			log.Fatal(err)
-		}
-	default:
-		log.Fatalf("Value should be like +<freq>/-<freq>/=<freq>")
+	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = (f.Name == "set"); actualFlag = f.Name })
+	if len(setFlags) > 1 { // Only one flag is allowed
+		log.Fatalln("Choose only one option")
 	}
 
-	blcRegVal = regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	switch actualFlag {
+	case "inc":
+		newVal = *incPointer
+	case "dec":
+		newVal = -*decPointer
+	case "set":
+		newVal = *setPointer
+	}
 
-	switch string(blChange[0]) {
-	case "+", "-":
-		if change, err := strconv.ParseInt(blChange, 10, 64); err == nil {
-			changeBacklightPercent(int(change), &blcRegVal)
-		} else {
-			log.Fatal(err)
+	log.Println(newVal)
+	log.Println(setFlags)
+	log.Println(actualFlag)
+
+	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+
+	switch flag.Arg(0) { // Working mode select
+	case "pwm":
+		log.Println("Have chosen PWM mode")
+		if setFlags[actualFlag] { // Setting mode
+			setFrequency(newVal, &blcRegVal)
+		} else { // Changing mode
+			changeFrequency(newVal, &blcRegVal)
 		}
-	case "=":
-		if set, err := strconv.ParseInt(blChange[1:], 10, 64); err == nil {
-			setBacklightPercent(int(set), &blcRegVal)
+	case "bl":
+		log.Println("Have chosen Backlight mode")
+		if setFlags[actualFlag] {
+			setBacklightPercent(newVal, &blcRegVal)
 		} else {
-			log.Fatal(err)
+			changeBacklightPercent(newVal, &blcRegVal)
 		}
 	default:
-		log.Fatalf("Value should be like +<freq>/-<freq>/=<freq>")
+		log.Fatalln("Choose operating mode from bl/pwm")
 	}
 
 }
