@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
+	"github.com/vdromanov/backli915t/cmd/backli915t/regs"
 )
 
 // DriverName is a name of compatible Linux kernel module

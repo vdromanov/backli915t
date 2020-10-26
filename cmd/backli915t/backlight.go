@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/vdromanov/i915-pwm-control/cmd/i915-pwm-control/regs"
+	"github.com/vdromanov/backli915t/cmd/backli915t/regs"
 )
 
 func getBacklightPercent(blcRegContents *int) int {
