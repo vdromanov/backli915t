@@ -32,7 +32,7 @@ func ReadReg(reg int) int {
 		log.Fatalln(err)
 	}
 	regValue := findHex(strings.Replace(string(out), regAddr, "", -1))[0] // A reg's addr is in output of intel-gpu-tools => replacing
-	ret, err := strconv.ParseInt(strings.Replace(regValue, hexPrefix, "", -1), 16, 32)
+	ret, err := strconv.ParseInt(strings.Replace(regValue, hexPrefix, "", -1), 16, 64)
 	if err != nil {
 		log.Fatalln(err)
 	}
