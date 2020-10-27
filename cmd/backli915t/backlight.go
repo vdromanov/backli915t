@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/vdromanov/backli915t/cmd/backli915t/regs"
+	"github.com/vdromanov/backli915t/internal/pkg/regs"
 )
 
 func getBacklightPercent(blcRegContents *int) int {

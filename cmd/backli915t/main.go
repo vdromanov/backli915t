@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/vdromanov/backli915t/cmd/backli915t/regs"
+	"github.com/vdromanov/backli915t/internal/pkg/regs"
 )
 
 // DriverName is a name of compatible Linux kernel module
