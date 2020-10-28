@@ -14,6 +14,8 @@ import (
 // DriverName is a name of compatible Linux kernel module
 const DriverName = "i915"
 
+const configFname = "/usr/share/backli915t/config.json"
+
 func main() {
 	if !checkModuleIsLoaded() {
 		log.Fatalf("Driver %s was not found in loaded ones.\nNothing to do...\n", DriverName)
@@ -33,10 +35,19 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nExample:\n\t%s pwm -inc 500\n", os.Args[0])
 	}
 
+	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	config := LoadConfig(configFname)
+
 	if len(os.Args) < 2 { // TODO: apply config in this case
-		perModeArgs.Usage()
-		os.Exit(-1)
+		log.Println("Applying config")
+		setFrequency(config.PwmFrequency, &blcRegVal)
+		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+		setBacklightPercent(config.BacklightPercent, &newBlRegContents)
+		return
 	}
+
+	defer DumpConfig(&config, configFname)
+
 	mode := os.Args[1]
 
 	perModeArgs.Parse(os.Args[2:])
@@ -61,16 +72,19 @@ func main() {
 		newVal = *setPointer
 	}
 
-	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
-
 	switch mode { // Working mode select
 	case "pwm":
 		log.Println("Have chosen PWM mode")
+		initialBlPercent := getBacklightPercent(&blcRegVal)
 		if setFlags[actualFlag] { // Explicitly setting a new value
 			setFrequency(newVal, &blcRegVal)
 		} else { // Changing existing value
 			changeFrequency(newVal, &blcRegVal)
 		}
+		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG) // To keep the same bl level %
+		config.PwmFrequency = getFrequency(&newBlRegContents)
+		setBacklightPercent(initialBlPercent, &newBlRegContents)
+		config.BacklightPercent = getBacklightPercent(&newBlRegContents)
 	case "bl":
 		log.Println("Have chosen Backlight mode")
 		if setFlags[actualFlag] {
@@ -78,6 +92,7 @@ func main() {
 		} else {
 			changeBacklightPercent(newVal, &blcRegVal)
 		}
+		config.BacklightPercent = getBacklightPercent(&blcRegVal)
 	default:
 		fmt.Fprintf(os.Stderr, "Incorrect mode %s has provided!\n\n", mode)
 		perModeArgs.Usage()
