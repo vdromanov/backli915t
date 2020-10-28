@@ -16,6 +16,7 @@ func getFrequency(blcRegContents *int) int {
 }
 
 func setFrequency(frequency int, blcRegContents *int) {
+	initialBacklightPercent := getBacklightPercent(blcRegContents)
 	_, cycle := regs.SplitPayload(*blcRegContents)
 	log.Printf("Got cycle: 0x%08x\n", cycle)
 	period, err := regs.FreqToPeriod(frequency)
@@ -24,6 +25,8 @@ func setFrequency(frequency int, blcRegContents *int) {
 	}
 	log.Printf("Got period: 0x%08x\n", period)
 	regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, regs.BuildPayload(period, cycle))
+	newBlcRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	setBacklightPercent(initialBacklightPercent, &newBlcRegContents)
 }
 
 func changeFrequency(value int, blcRegContents *int) {

@@ -36,63 +36,77 @@ func main() {
 	}
 
 	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
-	config := LoadConfig(configFname)
+	config, err := LoadConfig(configFname)
+	if err != nil {
+		log.Println(err)
+	}
 
-	if len(os.Args) < 2 { // TODO: apply config in this case
-		log.Println("Applying config")
+	if len(os.Args) < 2 { // Applying values from a config, if no keys provided
+		log.Printf("Applying config: %v\n", config)
 		setFrequency(config.PwmFrequency, &blcRegVal)
 		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
 		setBacklightPercent(config.BacklightPercent, &newBlRegContents)
 		return
 	}
 
-	defer DumpConfig(&config, configFname)
+	dump := func() {
+		err := DumpConfig(&config, configFname)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	defer dump()
 
 	mode := os.Args[1]
 
 	perModeArgs.Parse(os.Args[2:])
 
-	setFlags := make(map[string]bool) // Inc/Dec and Set modes are using different funcs => storing info, was the flag a Set mode or not
+	setFlags := []string{}
 	var newVal int
-	var actualFlag string
+	var changeVal int
 
-	perModeArgs.Visit(func(f *flag.Flag) { setFlags[f.Name] = (f.Name == "set"); actualFlag = f.Name }) // Iterating over all explicitly set flags
-	if len(setFlags) != 1 {                                                                             // Only one flag is allowed per mode
-		fmt.Fprintf(os.Stderr, "Got keys: %v\nOnly one key is allowed!\n\n", perModeArgs.Args())
+	perModeArgs.Visit(func(f *flag.Flag) { setFlags = append(setFlags, f.Name) }) // Iterating over all explicitly set flags
+	if len(setFlags) != 1 {                                                       // Only one flag is allowed per mode
+		fmt.Fprintf(os.Stderr, "Got keys: %v\nOnly one key is allowed!\n\n", setFlags)
 		perModeArgs.Usage()
 		os.Exit(-1)
 	}
 
-	switch actualFlag { // Could increment/decrement/explicitly set value
+	switch setFlags[0] { // Could increment/decrement/explicitly set value
 	case "inc":
-		newVal = *incPointer
+		changeVal = *incPointer
+		newVal = 0xFFFFFFFF
 	case "dec":
-		newVal = -*decPointer
+		changeVal = -*decPointer
+		newVal = 0xFFFFFFFF
 	case "set":
 		newVal = *setPointer
+		changeVal = 0xFFFFFFFF
 	}
 
 	switch mode { // Working mode select
 	case "pwm":
 		log.Println("Have chosen PWM mode")
-		initialBlPercent := getBacklightPercent(&blcRegVal)
-		if setFlags[actualFlag] { // Explicitly setting a new value
-			setFrequency(newVal, &blcRegVal)
-		} else { // Changing existing value
-			changeFrequency(newVal, &blcRegVal)
+		var actualFreq int
+		if newVal == 0xFFFFFFFF {
+			actualFreq = getFrequency(&blcRegVal) + changeVal
+		} else {
+			actualFreq = newVal
 		}
-		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG) // To keep the same bl level %
-		config.PwmFrequency = getFrequency(&newBlRegContents)
-		setBacklightPercent(initialBlPercent, &newBlRegContents)
-		config.BacklightPercent = getBacklightPercent(&newBlRegContents)
+		setFrequency(actualFreq, &blcRegVal) // TODO: pull out error
+		config.PwmFrequency = actualFreq
+
 	case "bl":
 		log.Println("Have chosen Backlight mode")
-		if setFlags[actualFlag] {
-			setBacklightPercent(newVal, &blcRegVal)
+		var actualBl int
+		if newVal == 0xFFFFFFFF {
+			actualBl = getBacklightPercent(&blcRegVal) + changeVal
 		} else {
-			changeBacklightPercent(newVal, &blcRegVal)
+			actualBl = newVal
 		}
-		config.BacklightPercent = getBacklightPercent(&blcRegVal)
+		setBacklightPercent(actualBl, &blcRegVal) // TODO: pull out error
+		config.BacklightPercent = actualBl
 	default:
 		fmt.Fprintf(os.Stderr, "Incorrect mode %s has provided!\n\n", mode)
 		perModeArgs.Usage()
