@@ -2,11 +2,12 @@ package regs
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+
+	log "github.com/vdromanov/backli915t/pkg/multilog"
 )
 
 // executable from package intel-gpu-tools
@@ -26,15 +27,15 @@ const (
 func ReadReg(reg int) int {
 	_fmt := fmt.Sprintf(hexMask, hexPrefix, bytelength*2) // Making a fixed-length hex string
 	regAddr := fmt.Sprintf(_fmt, reg)
-	log.Println("Will read from: ", regAddr)
+	log.Debug.Println("Will read from: ", regAddr)
 	out, err := exec.Command(execName, "read", regAddr).Output()
 	if err != nil {
-		log.Fatalln(err)
+		log.Info.Fatalln(err)
 	}
 	regValue := findHex(strings.Replace(string(out), regAddr, "", -1))[0] // A reg's addr is in output of intel-gpu-tools => replacing
 	ret, err := strconv.ParseInt(strings.Replace(regValue, hexPrefix, "", -1), 16, 64)
 	if err != nil {
-		log.Fatalln(err)
+		log.Info.Fatalln(err)
 	}
 	return int(ret)
 }
@@ -44,10 +45,10 @@ func WriteReg(reg int, val int) {
 	_fmt := fmt.Sprintf(hexMask, hexPrefix, bytelength*2) // Making a fixed-length hex string
 	regAddr := fmt.Sprintf(_fmt, reg)
 	regVal := fmt.Sprintf(_fmt, val)
-	log.Printf("Will write %s to %s\n", regVal, regAddr)
+	log.Debug.Printf("Will write %s to %s\n", regVal, regAddr)
 	_, err := exec.Command(execName, "write", regAddr, regVal).Output()
 	if err != nil {
-		log.Fatalln(err)
+		log.Info.Fatalln(err)
 	}
 }
 

@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/vdromanov/backli915t/internal/pkg/regs"
+	log "github.com/vdromanov/backli915t/pkg/multilog"
 )
 
 // DriverName is a name of compatible Linux kernel module
@@ -17,8 +17,9 @@ const DriverName = "i915"
 const configFname = "/usr/share/backli915t/config.json"
 
 func main() {
+	log.Info.AddOutput(os.Stderr)
 	if !checkModuleIsLoaded() {
-		log.Fatalf("Driver %s was not found in loaded ones.\nNothing to do...\n", DriverName)
+		log.Info.Fatalf("Driver %s was not found in loaded ones.\nNothing to do...\n", DriverName)
 	}
 
 	// Flags for both pwm and bl modes. Only one flag is allowed at the moment
@@ -38,11 +39,11 @@ func main() {
 	blcRegVal := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
 	config, err := LoadConfig(configFname)
 	if err != nil {
-		log.Println(err)
+		log.Debug.Println(err)
 	}
 
 	if len(os.Args) < 2 { // Applying values from a config, if no keys provided
-		log.Printf("Applying config: %v\n", config)
+		log.Info.Printf("Applying config: %v\n", config)
 		setFrequency(config.PwmFrequency, &blcRegVal)
 		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
 		setBacklightPercent(config.BacklightPercent, &newBlRegContents)
@@ -52,7 +53,7 @@ func main() {
 	dump := func() {
 		err := DumpConfig(&config, configFname)
 		if err != nil {
-			log.Println(err)
+			log.Info.Println(err)
 		}
 	}
 
@@ -87,7 +88,7 @@ func main() {
 
 	switch mode { // Working mode select
 	case "pwm":
-		log.Println("Have chosen PWM mode")
+		log.Debug.Println("Operating with PWM")
 		var actualFreq int
 		if newVal == 0xFFFFFFFF {
 			actualFreq = getFrequency(&blcRegVal) + changeVal
@@ -98,7 +99,7 @@ func main() {
 		config.PwmFrequency = actualFreq
 
 	case "bl":
-		log.Println("Have chosen Backlight mode")
+		log.Debug.Println("Operating with backlight")
 		var actualBl int
 		if newVal == 0xFFFFFFFF {
 			actualBl = getBacklightPercent(&blcRegVal) + changeVal
@@ -119,7 +120,7 @@ func main() {
 func checkModuleIsLoaded() bool {
 	content, err := ioutil.ReadFile("/proc/modules")
 	if err != nil {
-		log.Fatalln(err)
+		log.Info.Fatalln(err)
 	}
 	return strings.Contains(string(content), DriverName)
 }
