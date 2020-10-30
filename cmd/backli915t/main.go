@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	b "github.com/vdromanov/backli915t/internal/pkg/backli915t"
 	"github.com/vdromanov/backli915t/internal/pkg/regs"
 	log "github.com/vdromanov/backli915t/pkg/multilog"
 )
@@ -44,9 +45,9 @@ func main() {
 
 	if len(os.Args) < 2 { // Applying values from a config, if no keys provided
 		log.Info.Printf("Applying config: %v\n", config)
-		setFrequency(config.PwmFrequency, &blcRegVal)
+		b.SetFrequency(config.PwmFrequency, &blcRegVal)
 		newBlRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
-		setBacklightPercent(config.BacklightPercent, &newBlRegContents)
+		b.SetBacklightPercent(config.BacklightPercent, &newBlRegContents)
 		return
 	}
 
@@ -91,22 +92,22 @@ func main() {
 		log.Debug.Println("Operating with PWM")
 		var actualFreq int
 		if newVal == 0xFFFFFFFF {
-			actualFreq = getFrequency(&blcRegVal) + changeVal
+			actualFreq = b.GetFrequency(&blcRegVal) + changeVal
 		} else {
 			actualFreq = newVal
 		}
-		setFrequency(actualFreq, &blcRegVal) // TODO: pull out error
+		b.SetFrequency(actualFreq, &blcRegVal) // TODO: pull out error
 		config.PwmFrequency = actualFreq
 
 	case "bl":
 		log.Debug.Println("Operating with backlight")
 		var actualBl int
 		if newVal == 0xFFFFFFFF {
-			actualBl = getBacklightPercent(&blcRegVal) + changeVal
+			actualBl = b.GetBacklightPercent(&blcRegVal) + changeVal
 		} else {
 			actualBl = newVal
 		}
-		setBacklightPercent(actualBl, &blcRegVal) // TODO: pull out error
+		b.SetBacklightPercent(actualBl, &blcRegVal) // TODO: pull out error
 		config.BacklightPercent = actualBl
 	default:
 		fmt.Fprintf(os.Stderr, "Incorrect mode %s has provided!\n\n", mode)
