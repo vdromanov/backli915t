@@ -14,42 +14,64 @@ import (
 // DriverName is a name of compatible Linux kernel module
 const DriverName = "i915"
 
-const configFname = "/usr/share/backli915t/config.json"
-
 func main() {
 	log.Info.AddOutput(os.Stderr)
 	if !checkModuleIsLoaded() {
 		log.Info.Fatalf("Driver %s was not found in loaded ones.\nNothing to do...\n", DriverName)
 	}
 
-	// Flags for both pwm and bl modes. Only one flag is allowed at the moment
+	// Optional args for all modes
+	generalArgs := flag.NewFlagSet("", flag.ExitOnError)
+	debugPointer := generalArgs.Bool("debug", false, "show debug info in stdout")
+	configPointer := generalArgs.String("c", "/usr/share/backli915t/config.json", "config fname")
+
+	generalArgs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "General args (optional) are:\n")
+		generalArgs.VisitAll(func(f *flag.Flag) { fmt.Fprintf(os.Stderr, "\t-%s - %v\n", f.Name, f.Usage) })
+	}
+
+	// Actions for both pwm and bl modes. Only one arg is allowed at the moment
 	perModeArgs := flag.NewFlagSet("", flag.ExitOnError)
 	incPointer := perModeArgs.Int("inc", 0xFFFFFFFF, "increment value")
 	decPointer := perModeArgs.Int("dec", 0xFFFFFFFF, "decrement value")
 	setPointer := perModeArgs.Int("set", 0xFFFFFFFF, "explicitly set value")
 
 	perModeArgs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage:\n\t%s <mode> -<key> <value>\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Allowed modes are:\n\tpwm - adjusting frequency in Hz\n\tbl - adjusting brightness in %%\n")
-		fmt.Fprintf(os.Stderr, "Allowed keys are:\n")
+		fmt.Fprintf(os.Stderr, "Action could be the one from:\n")
 		perModeArgs.VisitAll(func(f *flag.Flag) { fmt.Fprintf(os.Stderr, "\t-%s - %v\n", f.Name, f.Usage) })
-		fmt.Fprintf(os.Stderr, "\nExample:\n\t%s pwm -inc 500\n", os.Args[0])
 	}
 
-	config, err := LoadConfig(configFname)
+	overallUsage := func(naming string) {
+		fmt.Fprintf(os.Stderr, "\n\nUsage:\n")
+		fmt.Fprintf(os.Stderr, "%s - utility to control pwm frequency and backlight level of displays with pwm-backlight via %s driver\n\n", naming, DriverName)
+		fmt.Fprintf(os.Stderr, "Syntax is:\n\t%s [general args] <mode> <action>\n\n", os.Args[0])
+		generalArgs.Usage()
+		fmt.Fprintf(os.Stderr, "Modes are:\n\tpwm - adjusting frequency in Hz\n\tbl - adjusting brightness in %%\n")
+		perModeArgs.Usage()
+		fmt.Fprintf(os.Stderr, "Example:\n\t%s --debug bl -inc 10\n\t\n\nLaunching without args will apply last pwm and backlight\n", os.Args[0])
+	}
+
+	generalArgs.Parse(os.Args[1:])
+
+	if *debugPointer {
+		log.Debug.AddOutput(os.Stdout)
+	}
+
+	config, err := LoadConfig(*configPointer)
 	if err != nil {
 		log.Debug.Println(err)
 	}
 
-	if len(os.Args) < 2 { // Applying values from a config, if no keys provided
-		log.Info.Printf("Applying config: %v\n", config)
+	if len(generalArgs.Args()) == 0 { // Applying values from a config, if no keys provided
+		log.Info.Printf("Applying config: %v\n\n", config)
 		b.SetBacklightPercent(config.BacklightPercent)
 		b.SetFrequency(config.PwmFrequency)
+		overallUsage(os.Args[0])
 		return
 	}
 
 	dump := func() {
-		err := DumpConfig(&config, configFname)
+		err := DumpConfig(&config, *configPointer)
 		if err != nil {
 			log.Info.Println(err)
 		}
@@ -57,18 +79,18 @@ func main() {
 
 	defer dump()
 
-	mode := os.Args[1]
+	mode := generalArgs.Args()[0]
 
-	perModeArgs.Parse(os.Args[2:])
+	perModeArgs.Parse(generalArgs.Args()[1:])
 
 	setFlags := []string{}
 	var newVal int
 	var changeVal int
 
-	perModeArgs.Visit(func(f *flag.Flag) { setFlags = append(setFlags, f.Name) }) // Iterating over all explicitly set flags
-	if len(setFlags) != 1 {                                                       // Only one flag is allowed per mode
-		fmt.Fprintf(os.Stderr, "Got keys: %v\nOnly one key is allowed!\n\n", setFlags)
-		perModeArgs.Usage()
+	perModeArgs.Visit(func(f *flag.Flag) { setFlags = append(setFlags, f.Name) }) // Iterating over all explicitly set args
+	if len(setFlags) != 1 {                                                       // Only one arg is allowed per mode
+		fmt.Fprintf(os.Stderr, "Got incorrect actions: %v\n\n", setFlags)
+		overallUsage(os.Args[0])
 		os.Exit(-1)
 	}
 
@@ -107,8 +129,8 @@ func main() {
 		b.SetBacklightPercent(actualBl) // TODO: pull out error
 		config.BacklightPercent = actualBl
 	default:
-		fmt.Fprintf(os.Stderr, "Incorrect mode %s has provided!\n\n", mode)
-		perModeArgs.Usage()
+		fmt.Fprintf(os.Stderr, "%s - incorrect mode!\n\n", mode)
+		overallUsage(os.Args[0])
 		os.Exit(-1)
 	}
 
