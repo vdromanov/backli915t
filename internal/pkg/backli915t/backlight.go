@@ -5,8 +5,9 @@ import (
 	log "github.com/vdromanov/backli915t/pkg/multilog"
 )
 
-func GetBacklightPercent(blcRegContents *int) int {
-	period, cycle := regs.SplitPayload(*blcRegContents)
+func GetBacklightPercent() int {
+	blcRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	period, cycle := regs.SplitPayload(blcRegContents)
 	percent, err := regs.CycleToPercent(cycle, period)
 	if err != nil {
 		log.Info.Fatal(err) // TODO: pull to main
@@ -14,8 +15,9 @@ func GetBacklightPercent(blcRegContents *int) int {
 	return percent
 }
 
-func SetBacklightPercent(percent int, blcRegContents *int) {
-	period, _ := regs.SplitPayload(*blcRegContents)
+func SetBacklightPercent(percent int) {
+	blcRegContents := regs.ReadReg(regs.BLC_PWM_PCH_CTL2_REG)
+	period, _ := regs.SplitPayload(blcRegContents)
 	wantedCycle, err := regs.PercentToCycle(percent, period)
 	if err != nil {
 		log.Info.Fatal(err) // TODO: pull to main
@@ -24,8 +26,8 @@ func SetBacklightPercent(percent int, blcRegContents *int) {
 	regs.WriteReg(regs.BLC_PWM_PCH_CTL2_REG, payload)
 }
 
-func ChangeBacklightPercent(value int, blcRegContents *int) {
-	actualBl := GetBacklightPercent(blcRegContents)
+func ChangeBacklightPercent(value int) {
+	actualBl := GetBacklightPercent()
 	newBl := actualBl + value
-	SetBacklightPercent(newBl, blcRegContents)
+	SetBacklightPercent(newBl)
 }
