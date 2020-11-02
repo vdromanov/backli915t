@@ -84,8 +84,6 @@ func main() {
 	perModeArgs.Parse(generalArgs.Args()[1:])
 
 	setFlags := []string{}
-	var newVal int
-	var changeVal int
 
 	perModeArgs.Visit(func(f *flag.Flag) { setFlags = append(setFlags, f.Name) }) // Iterating over all explicitly set args
 	if len(setFlags) != 1 {                                                       // Only one arg is allowed per mode
@@ -94,38 +92,34 @@ func main() {
 		os.Exit(-1)
 	}
 
+	var calculateNewValue func(func() int) int
+
 	switch setFlags[0] { // Could increment/decrement/explicitly set value
 	case "inc":
-		changeVal = *incPointer
-		newVal = 0xFFFFFFFF
+		calculateNewValue = func(getter func() int) int {
+			return getter() + *incPointer
+		}
 	case "dec":
-		changeVal = -*decPointer
-		newVal = 0xFFFFFFFF
+		calculateNewValue = func(getter func() int) int {
+			return getter() - *decPointer
+		}
+
 	case "set":
-		newVal = *setPointer
-		changeVal = 0xFFFFFFFF
+		calculateNewValue = func(getter func() int) int {
+			return *setPointer
+		}
 	}
 
 	switch mode { // Working mode select
 	case "pwm":
 		log.Debug.Println("Operating with PWM")
-		var actualFreq int
-		if newVal == 0xFFFFFFFF {
-			actualFreq = b.GetFrequency() + changeVal
-		} else {
-			actualFreq = newVal
-		}
+		actualFreq := calculateNewValue(b.GetFrequency)
 		b.SetFrequency(actualFreq) // TODO: pull out error
 		config.PwmFrequency = actualFreq
 
 	case "bl":
 		log.Debug.Println("Operating with backlight")
-		var actualBl int
-		if newVal == 0xFFFFFFFF {
-			actualBl = b.GetBacklightPercent() + changeVal
-		} else {
-			actualBl = newVal
-		}
+		actualBl := calculateNewValue(b.GetBacklightPercent)
 		b.SetBacklightPercent(actualBl) // TODO: pull out error
 		config.BacklightPercent = actualBl
 	default:
