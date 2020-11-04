@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	b "github.com/vdromanov/backli915t/internal/pkg/backli915t"
+	"github.com/vdromanov/backli915t/internal/pkg/version"
 	log "github.com/vdromanov/backli915t/pkg/multilog"
 )
 
@@ -41,9 +42,10 @@ func main() {
 		perModeArgs.VisitAll(func(f *flag.Flag) { fmt.Fprintf(os.Stderr, "\t-%s - %v\n", f.Name, f.Usage) })
 	}
 
-	overallUsage := func(naming string) {
+	overallUsage := func() {
+		namingString := fmt.Sprintf("%s %s", os.Args[0], version.Version)
 		fmt.Fprintf(os.Stderr, "\n\nUsage:\n")
-		fmt.Fprintf(os.Stderr, "%s - utility to control pwm frequency and backlight level of displays with pwm-backlight via %s driver\n\n", naming, DriverName)
+		fmt.Fprintf(os.Stderr, "%s - utility to control pwm frequency and backlight level of displays with pwm-backlight via %s driver\n\n", namingString, DriverName)
 		fmt.Fprintf(os.Stderr, "Syntax is:\n\t%s [general args] <mode> <action>\n\n", os.Args[0])
 		generalArgs.Usage()
 		fmt.Fprintf(os.Stderr, "Modes are:\n\tpwm - adjusting frequency in Hz\n\tbl - adjusting brightness in %%\n")
@@ -66,7 +68,7 @@ func main() {
 		log.Info.Printf("Applying config: %v\n\n", config)
 		b.SetBacklightPercent(config.BacklightPercent)
 		b.SetFrequency(config.PwmFrequency)
-		overallUsage(os.Args[0])
+		overallUsage()
 		return
 	}
 
@@ -88,7 +90,7 @@ func main() {
 	perModeArgs.Visit(func(f *flag.Flag) { setFlags = append(setFlags, f.Name) }) // Iterating over all explicitly set args
 	if len(setFlags) != 1 {                                                       // Only one arg is allowed per mode
 		fmt.Fprintf(os.Stderr, "Got incorrect actions: %v\n\n", setFlags)
-		overallUsage(os.Args[0])
+		overallUsage()
 		os.Exit(-1)
 	}
 
@@ -124,7 +126,7 @@ func main() {
 		config.BacklightPercent = actualBl
 	default:
 		fmt.Fprintf(os.Stderr, "%s - incorrect mode!\n\n", mode)
-		overallUsage(os.Args[0])
+		overallUsage()
 		os.Exit(-1)
 	}
 
