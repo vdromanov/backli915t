@@ -1,0 +1,10 @@
+Source: backli915t
+Maintainer: Vladimir Romanov <vdromanov@yahoo.com>
+Priority: optional
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.1
+
+Package: backli915t
+Architecture: amd64
+Depends: intel-gpu-tools (>= 1.17)
+Description: An utility to control backlight brightness and pwm frequency of screens, driven by i915 driver

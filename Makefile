@@ -1,8 +1,7 @@
 # Project params
 REPO=github.com/vdromanov/backli915t/
 ENTRY_POINT=$(REPO)cmd/backli915t/
-# VERSION=git -C $(REPO) describe --tags
-VERSION=1.0_test
+VERSION=$(shell git describe --tags)
 CHANGELOG_FNAME=debian/changelog
 
 all: clean build
