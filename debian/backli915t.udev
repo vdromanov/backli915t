@@ -1,5 +1,5 @@
-KERNEL!="intel_backlight", SUBSYSTEM!="backlight", ACTION!="change", GOTO="backli915t_rule_end"
+KERNEL=="intel_backlight", SUBSYSTEM=="backlight", ACTION=="change", ENV{PATH}="/usr/bin"
 
-RUN="backli915t"
+SUBSYSTEM=="power_supply", ACTION=="change", ENV{PATH}="/usr/bin"
 
-LABEL="backli915t_rule_end"
+RUN+="/usr/bin/backli915t"
