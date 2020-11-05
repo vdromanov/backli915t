@@ -1,0 +1,5 @@
+KERNEL!="intel_backlight", SUBSYSTEM!="backlight", ACTION!="change", GOTO="backli915t_rule_end"
+
+RUN="backli915t"
+
+LABEL="backli915t_rule_end"
