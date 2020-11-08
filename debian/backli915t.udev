@@ -1,0 +1,5 @@
+KERNEL=="intel_backlight", SUBSYSTEM=="backlight", ACTION=="change", ENV{PATH}="/usr/bin"
+
+SUBSYSTEM=="power_supply", ACTION=="change", ENV{PATH}="/usr/bin"
+
+RUN+="/usr/bin/backli915t"

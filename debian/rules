@@ -4,3 +4,6 @@
 	dh $@ --verbose --parallel
 
 override_dh_auto_test:
+override_dh_auto_install:
+	dh_auto_install
+	dh_installudev --priority=90

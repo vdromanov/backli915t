@@ -1,3 +1,10 @@
+backli915t (1.1) stable; urgency=medium
+
+  * Added udev-rule, restoring brightness and pwm params after any
+    intel_backlight or power event
+
+ -- Vladimir Romanov <vdromanov@yahoo.com>  Fri, 06 Nov 2020 01:58:56 +0300
+
 backli915t (1.0) stable; urgency=medium
 
   * Added debianization
