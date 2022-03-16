@@ -1,5 +1,5 @@
 # backli915t
-An utility to set backlight pwm frequency (and brightness level) of displays, driven by Intel integrated GPUs with i915 driver
+An utility to set backlight pwm frequency (and brightness level) of displays, driven by Intel integrated GPUs with i915 driver.
 
 ### The project is under active development
 
